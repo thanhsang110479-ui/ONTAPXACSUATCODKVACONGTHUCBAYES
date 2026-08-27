@@ -1,0 +1,942 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>ÔN TẬP XÁC SUẤT-CÔNG THỨC BAYES - TẠO BỞI MR SANG</title>
+<style>
+  :root {
+    --bg1:#1f3243;
+    --bg2:#22435c;
+    --card:rgba(255,255,255,.08);
+    --line:rgba(255,255,255,.14);
+    --text:#eaf4ff;
+    --muted:rgba(234,244,255,.78);
+    --green:#19c37d;
+    --orange:#ff8a00;
+    --orange2:#ffb14a;
+    --bad:#ff4d4f;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+    color:var(--text);
+    background:
+      radial-gradient(900px 500px at 15% 0%, rgba(25,195,125,.35), transparent 55%),
+      radial-gradient(900px 520px at 85% 10%, rgba(255,138,0,.35), transparent 55%),
+      linear-gradient(180deg, var(--bg2), var(--bg1));
+    min-height:100vh;
+  }
+  .wrap{max-width:980px;margin:0 auto;padding:18px 14px 28px}
+  .topbar{
+    display:flex;align-items:center;justify-content:space-between;gap:12px;
+    padding:14px 16px;border:1px solid var(--line);border-radius:18px;
+    background:linear-gradient(135deg, rgba(0,120,255,.95), rgba(0,180,255,.95));
+    box-shadow:0 14px 40px rgba(0,0,0,.25);
+  }
+  /* Topbar blue + white text (only this area) */
+  .topbar .title h1,
+  .topbar .sub,
+  .topbar .pill{ color:#ffffff !important; }
+  .topbar .pill{
+    border-color: rgba(255,255,255,.35) !important;
+    background: rgba(255,255,255,.18) !important;
+  }
+
+  /* Title text on orange topbar only */
+  .topbar .title h1, .topbar .title .sub{color:#0b2a6a;}
+
+  .title{display:flex;flex-direction:column;gap:4px}
+  .title h1{margin:0;font-size:18px;letter-spacing:.2px}
+  .title .sub{font-size:12px;color:var(--muted)}
+  .pill{
+    font-size:12px;border:1px solid var(--line);border-radius:999px;
+    padding:8px 10px;background:rgba(0,0,0,.15);color:var(--muted);
+    white-space:nowrap;
+  }
+  .grid{display:grid;grid-template-columns:1fr;gap:14px;margin-top:14px}
+  @media (max-width: 900px){ .grid{grid-template-columns:1fr} }
+  .card{
+    border:1px solid var(--line);border-radius:18px;padding:16px;
+    background:linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
+    box-shadow:0 14px 40px rgba(0,0,0,.25);
+  }
+  .btn{
+    border:1px solid rgba(255,255,255,.18);
+    border-radius:14px;padding:10px 12px;
+    background:linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,.02));
+    color:var(--text);cursor:pointer;transition:.12s transform, .12s filter;
+    user-select:none;
+  }
+  .btn:hover{transform:translateY(-1px);filter:brightness(1.06)}
+  .btn:disabled{opacity:.55;cursor:not-allowed;transform:none;filter:none}
+  .btn.primary{
+    border-color: rgba(25,195,125,.55);
+    box-shadow: 0 0 0 2px rgba(25,195,125,.12) inset;
+  }
+  .btn.orange{
+    border-color: rgba(255,138,0,.65);
+    box-shadow: 0 0 0 2px rgba(255,138,0,.12) inset;
+  }
+  .btn.ghost{background:rgba(0,0,0,.10)}
+  .btn.exit{
+    background: linear-gradient(180deg, rgba(255,255,255,.22), rgba(255,255,255,.06)), #ff3b30;
+    border-color: rgba(255,59,48,.95);
+    box-shadow: 0 0 0 2px rgba(255,59,48,.18) inset;
+    color:#fff;
+    font-weight:800;
+  }
+  .btn.exit:hover{filter:brightness(1.05)}
+  .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+  .muted{color:var(--muted);font-size:13px;line-height:1.5}
+  .sep{height:1px;background:rgba(255,255,255,.12);margin:12px 0}
+  .stats{display:grid;grid-template-columns:1fr;gap:10px}
+  .stat{border:1px solid rgba(255,255,255,.12);border-radius:14px;padding:10px;background:rgba(0,0,0,.14)}
+  .stat .k{font-size:12px;color:var(--muted)}
+  .stat .v{font-size:18px;font-weight:800;margin-top:4px}
+  .screen{display:none}
+  .screen.active{display:block}
+  .qhead{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:center}
+  .qleft{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+
+  .qnum{font-weight:800;font-size:22px}
+  .timer{font-variant-numeric:tabular-nums;font-size:20px}
+  .bar{height:10px;border-radius:999px;background:rgba(255,255,255,.10);overflow:hidden;border:1px solid rgba(255,255,255,.12)}
+  .bar > div{height:100%;width:100%;background:linear-gradient(90deg, var(--green), var(--orange))}
+  .qtext{margin-top:12px;font-size:22px;line-height:1.6;color:#fff}
+  .qtext, .qtext *{color:#fff !important}
+  .choice, .choice *{color:#fff !important}
+  .choice b{color:var(--orange2) !important}
+
+  .qtext img{max-height:122px;vertical-align:middle;filter:invert(1) brightness(1.9) contrast(2.2);image-rendering:-webkit-optimize-contrast;transform:translateZ(0);}
+.choices img{max-height:112px;vertical-align:middle;filter:invert(1) brightness(1.9) contrast(2.2);image-rendering:-webkit-optimize-contrast;transform:translateZ(0);}
+  .choices{display:grid;gap:10px;margin-top:12px}
+  .choice{
+    text-align:left;padding:16px 14px;border-radius:18px;
+    border:1px solid rgba(255,255,255,.14);
+    background:rgba(0,0,0,.12);
+    font-size:20px;line-height:1.4;
+  }
+  .choice:hover{border-color: rgba(255,177,74,.70)}
+  .choice.correct{border-color: rgba(25,195,125,.85); box-shadow: 0 0 0 2px rgba(25,195,125,.12) inset;}
+  .choice.wrong{border-color: rgba(255,77,79,.85); box-shadow: 0 0 0 2px rgba(255,77,79,.12) inset;}
+  .choice.disabled{pointer-events:none;opacity:.95}
+  .toast{margin-top:10px;font-size:14px}
+  .toast.good{color:var(--green)}
+  .toast.bad{color:var(--bad)}
+  .footer{text-align:center;margin-top:14px;color:rgba(234,244,255,.65);font-size:12px}
+
+  /* Player form */
+  .formGrid{display:grid; grid-template-columns: 1fr 1fr; gap:12px; margin:14px 0 6px;}
+  @media (max-width:700px){ .formGrid{grid-template-columns:1fr;} }
+  .field label{display:block; font-size:13px; color:var(--muted); margin:0 0 6px; font-weight:600;}
+  input.text{
+    width:100%;
+    padding:12px 12px;
+    border-radius:14px;
+    border:1px solid rgba(255,255,255,.18);
+    background: rgba(0,0,0,.12);
+    color: var(--text);
+    outline:none;
+    font-size:16px;
+  }
+  input.text:focus{border-color: rgba(255,138,0,.7); box-shadow:0 0 0 2px rgba(255,138,0,.12) inset;}
+  .warn{margin-top:8px; color:#ffd166; font-size:13px;}
+
+
+  .qright{display:flex;align-items:center;gap:10px}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+
+  <script>
+    window.MathJax = {
+      tex: {
+        inlineMath: [['$', '$'], ['\\(', '\\)']],
+        displayMath: [['$$', '$$'], ['\\[', '\\]']],
+        processEscapes: true
+      },
+      options: { skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code'] }
+    };
+  </script>
+  <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+</head>
+<body>
+<div class="wrap">
+  <div class="topbar">
+    <div class="title">
+      <h1>ÔN TẬP XÁC SUẤT-CÔNG THỨC BAYES</h1>
+      <div class="sub">TẠO BỞI MR SANG</div>
+    </div>
+    <div class="pill">20 câu / lượt • 60 giây / câu</div>
+  </div>
+
+  <div class="grid">
+    <div class="card">
+      <div class="screen active" id="screenStart">
+        <audio id="introAudio" preload="auto" playsinline></audio>
+        <div class="muted">
+          Nhấn <b>Bắt đầu</b> để chơi. Mỗi lượt gồm <b>20 câu</b> lấy ngẫu nhiên từ kho. Mỗi câu có <b>60 giây</b>.
+        </div>
+        <div class="sep"></div>
+
+        <div class="formGrid">
+          <div class="field">
+            <label for="playerName">Họ và tên</label>
+            <input class="text" id="playerName" name="mr_sang_player_name" type="text" placeholder="Nhập họ và tên..." autocomplete="off" />
+          </div>
+          <div class="field">
+            <label for="playerClass">Lớp</label>
+            <input class="text" id="playerClass" name="mr_sang_player_class" type="text" placeholder="Ví dụ: 12A1" autocomplete="off" />
+          </div>
+        </div>
+        <div class="warn" id="playerWarn" style="display:none">Vui lòng nhập đầy đủ <b>Họ và tên</b> và <b>Lớp</b> để bắt đầu.</div>
+        <div class="row">
+          <button class="btn primary" id="btnStart">Bắt đầu</button>
+          <button class="btn ghost" id="btnHow">Hướng dẫn</button>
+        </div>
+        <div class="toast muted" id="howText" style="display:none"></div>
+      </div>
+
+      <div class="screen" id="screenGame">
+        <div class="qhead">
+          <div class="qleft"><div class="qnum" id="qNum">Câu 1/20</div><button class="btn exit" id="btnExit" type="button">Thoát</button></div>
+<div class="qright"><div class="timer" id="qTimer">01:00</div></div></div>
+        <div class="bar"><div id="timeBar"></div></div>
+
+        <div class="qtext" id="qText"></div>
+        <div class="choices" id="choices"></div>
+
+        <div class="toast" id="toast"></div>
+
+        <div class="sep"></div>
+        <div class="row">
+          <button class="btn ghost" id="btnPrev" disabled>← Câu trước</button>
+          <button class="btn orange" id="btnNext" disabled>Câu tiếp →</button>
+          <button class="btn ghost" id="btnExitReview" style="display:none">↩ Trở lại kết quả</button>
+          <span class="muted" id="navHint">Chọn đáp án để mở nút “Câu tiếp”.</span>
+        </div>
+      </div>
+
+      <div class="screen" id="screenResult">
+        <div class="qhead">
+          <div class="qnum">Hoàn thành!</div>
+          <div class="pill" id="resultTime">—</div>
+        </div>
+        <div class="sep"></div>
+        <div class="stats">
+          <div class="stat"><div class="k">Số câu đúng</div><div class="v" id="rGood">0</div></div>
+          <div class="stat"><div class="k">Số câu sai</div><div class="v" id="rBad">0</div></div>
+          <div class="stat"><div class="k">Điểm (10)</div><div class="v" id="rScore">0</div></div>
+        </div>
+        <div class="sep"></div>
+        <div class="row">
+          <button class="btn primary" id="btnReplay">Chơi lượt mới</button>
+          <button class="btn orange" id="btnExport">Tải Excel kết quả</button>
+          <button class="btn ghost" id="btnReview">Xem lại</button>
+        </div>
+        <div class="toast muted" id="exportNote">Nhấn <b>Tải Excel kết quả</b> để tải file gửi giáo viên.</div>
+        <div class="toast muted" id="reviewNote" style="display:none">
+          Chế độ xem lại chỉ hiển thị câu + đáp án đã chọn và đánh dấu đúng/sai.
+        </div>
+      </div>
+
+      <div class="footer">© ÔN TẬP XÁC SUẤT-CÔNG THỨC BAYES - TẠO BỞI MR SANG</div>
+    </div>
+
+    <div class="card">
+      <div class="muted"><b>Thống kê lượt chơi</b></div>
+      <div class="sep"></div>
+      <div class="stats">
+        <div class="stat"><div class="k">Tiến độ</div><div class="v" id="sProg">0/20</div></div>
+        <div class="stat"><div class="k">Đúng</div><div class="v" id="sGood">0</div></div>
+        <div class="stat"><div class="k">Sai</div><div class="v" id="sBad">0</div></div>
+      </div>
+      <div class="sep"></div>
+      <div class="muted">
+        <b>Mẹo</b><br/>
+        • Nếu hết thời gian mà chưa chọn, hệ thống tính là <b>sai</b> và chuyển câu tiếp theo.<br/>
+        • Có thể quay lại câu trước để xem lại, nhưng không đổi đáp án sau khi đã chấm.
+      </div>
+      <div class="sep"></div>
+      <div class="row">
+        <button class="btn ghost" id="btnStop" disabled>Kết thúc sớm</button>
+        <button class="btn ghost" id="btnMute">Tắt âm</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const BANK_G1 = [{"id": 1, "q": "Cho $A$ và $B$ là hai biến cố độc lập, với $P(A)=0{,}2024$, $P(B)=0{,}2025$. Tính $P(A\\mid B)$.", "A": "$0{,}7975$.", "B": "$0{,}7976$.", "C": "$0{,}2024$.", "D": "$0{,}2025$.", "correct": "C"}, {"id": 2, "q": "Cho hai biến cố $A$ và $B$. Xác suất của biến cố $A$ với điều kiện biến cố $B$ đã xảy ra được gọi là xác suất của $A$ với điều kiện $B$, kí hiệu là $P(A\\mid B)$. Phát biểu nào sau đây là đúng?", "A": "Nếu $P(A)>0$ thì $P(A\\mid B)=\\dfrac{P(AB)}{P(A)}$.", "B": "Nếu $P(AB)>0$ thì $P(A\\mid B)=\\dfrac{P(A)}{P(AB)}$.", "C": "Nếu $P(B)>0$ thì $P(A\\mid B)=\\dfrac{P(AB)}{P(B)}$.", "D": "Nếu $P(AB)>0$ thì $P(A\\mid B)=\\dfrac{P(B)}{P(AB)}$.", "correct": "C"}, {"id": 3, "q": "Cho hai biến cố $A$ và $B$. Xác suất của biến cố $A$ với điều kiện biến cố $B$ đã xảy ra được gọi là xác suất của $A$ với điều kiện $B$, kí hiệu là $P(A\\mid B)$. Phát biểu nào sau đây là đúng?", "A": "Nếu $P(A)>0$ thì $P(A\\mid B)=\\dfrac{P(A)}{P(B)}$.", "B": "Nếu $P(AB)>0$ thì $P(A\\mid B)=\\dfrac{P(B)}{P(AB)}$.", "C": "Nếu $P(B)>0$ thì $P(A\\mid B)=\\dfrac{P(AB)}{P(B)}$.", "D": "Nếu $P(AB)>0$ thì $P(A\\mid B)=\\dfrac{P(A)}{P(AB)}$.", "correct": "C"}, {"id": 4, "q": "Nếu $A,\\ B$ là hai biến cố bất kì thì", "A": "$P(A\\cap B)=P(A)\\cdot P(A\\mid B)$.", "B": "$P(A\\cap B)=P(A)\\cdot P(B)$.", "C": "$P(A\\cap B)=P(A)\\cdot P(B\\mid A)$.", "D": "$P(A\\cap B)=P(B)\\cdot P(B\\mid A)$.", "correct": "C"}, {"id": 5, "q": "Cho $A,\\ B$ là hai biến cố, trong đó $P(B)>0$. Khi đó", "A": "$P(A\\mid B)=\\dfrac{P(A\\cup B)}{P(A)}$.", "B": "$P(A\\mid B)=\\dfrac{P(A\\cup B)}{P(A)}$.", "C": "$P(A\\mid B)=\\dfrac{P(A\\cup B)}{P(B)}$.", "D": "$P(A\\mid B)=\\dfrac{P(A\\cap B)}{P(B)}$.", "correct": "D"}, {"id": 6, "q": "Với $A,\\ B$ là hai biến cố bất kỳ thì", "A": "$P(AB)=P(B)\\cdot P(A\\mid B)$.", "B": "$P(AB)=P(B)\\cdot P(A\\mid \\overline{B})$.", "C": "$P(AB)=P(B)\\cdot P(\\overline{A}\\mid B)$.", "D": "$P(AB)=P(B)\\cdot P(B\\mid A)$.", "correct": "A"}, {"id": 7, "q": "Cho hai biến cố $A$ và $B$ với $0<P(B)<1$. Khi đó", "A": "$P(A)=P(B)\\cdot P(A\\mid B)+P(\\overline{B})\\cdot P(A\\mid \\overline{B})$.", "B": "$P(A)=P(B)\\cdot P(A\\mid B)+P(\\overline{B})\\cdot P(\\overline{A}\\mid B)$.", "C": "$P(A)=P(B)\\cdot P(A\\mid \\overline{B})+P(\\overline{B})\\cdot P(A\\mid \\overline{B})$.", "D": "$P(A)=P(B)\\cdot P(A\\mid B)+P(\\overline{B})\\cdot P(A\\mid B)$.", "correct": "A"}, {"id": 8, "q": "Giả sử $A,\\ B$ là hai biến cố ngẫu nhiên thỏa mãn $P(A)>0$ và $0<P(B)<1$. Khi đó", "A": "$P(B\\mid A)=\\dfrac{P(B)\\cdot P(A\\mid B)}{P(B)\\cdot P(A\\mid B)+P(\\overline{B})\\cdot P(\\overline{A}\\mid B)}$.", "B": "$P(B\\mid A)=\\dfrac{P(B)\\cdot P(A\\mid B)}{P(B)\\cdot P(A\\mid B)+P(\\overline{B})\\cdot P(A\\mid \\overline{B})}$.", "C": "$P(B\\mid A)=\\dfrac{P(B)\\cdot P(A\\mid B)}{P(B)\\cdot P(A\\mid \\overline{B})+P(\\overline{B})\\cdot P(A\\mid B)}$.", "D": "$P(B\\mid A)=\\dfrac{P(B)\\cdot P(A\\mid B)}{P(B)\\cdot P(\\overline{A}\\mid B)+P(\\overline{B})\\cdot P(A\\mid B)}$.", "correct": "B"}, {"id": 9, "q": "Cho $A,\\ B$ là hai biến cố độc lập. Khẳng định nào sau đây sai?", "A": "$P(A\\mid B)=P(A)$.", "B": "$P(B\\mid A)=P(B)$.", "C": "$P(\\overline{A}\\mid B)=P(B)$.", "D": "$P(A\\mid \\overline{B})=P(A)$.", "correct": "C"}, {"id": 10, "q": "Cho $P(A),\\ P(B)>0$. Chọn khẳng định đúng trong các khẳng định sau.", "A": "$P(A\\mid B)=\\dfrac{P(A\\cap B)}{P(A)}$.", "B": "$P(A\\mid B)=\\dfrac{P(A\\cap B)}{P(B)}$.", "C": "$P(A\\mid B)=\\dfrac{P(A\\cup B)}{P(A)}$.", "D": "$P(A\\mid B)=\\dfrac{P(A\\cup B)}{P(B)}$.", "correct": "B"}, {"id": 11, "q": "Đạt có một túi gồm $3$ viên bi màu trắng và $7$ viên bi màu đỏ. Lấy lần lượt mỗi lần một viên theo cách lấy không trả lại. Tính xác suất để lần thứ hai Đạt lấy được viên bi màu đỏ nếu biết rằng viên bị lấy lần thứ nhất cũng là màu đỏ.", "A": "$\\dfrac{2}{3}$.", "B": "$\\dfrac{2}{7}$.", "C": "$\\dfrac{1}{5}$.", "D": "$\\dfrac{1}{7}$.", "correct": "A"}, {"id": 12, "q": "Đức chọn ngẫu nhiên đáp án cho $2$ câu hỏi độc lập. Khả năng đúng của câu hỏi $1$ là $0{,}6$ và câu hỏi $2$ là $0{,}7$. Biết Đức chọn sai đáp án của câu hỏi $1$, tính xác suất để Đức chọn đúng ở câu hỏi $2$.", "A": "$0{,}7$.", "B": "$0{,}28$.", "C": "$0{,}42$.", "D": "$0{,}3$.", "correct": "A"}, {"id": 13, "q": "Cho sơ đồ hình cây như hình bên. Xác suất của biến cố cả $A$ và $B$ đều không xảy ra là<div style='margin-top:8px'><svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 360 230' style='max-width:320px;width:100%;height:auto;display:block'>\n  <g>\n    <line x1='40' y1='115' x2='105' y2='55' stroke='#ffffff' stroke-width='1.8'/>\n    <line x1='40' y1='115' x2='105' y2='175' stroke='#ffffff' stroke-width='1.8'/>\n    <line x1='140' y1='55' x2='255' y2='20' stroke='#ffffff' stroke-width='1.8'/>\n    <line x1='140' y1='55' x2='255' y2='105' stroke='#ffffff' stroke-width='1.8'/>\n    <line x1='140' y1='175' x2='255' y2='140' stroke='#ffffff' stroke-width='1.8'/>\n    <line x1='140' y1='175' x2='255' y2='225' stroke='#ffffff' stroke-width='1.8'/>\n\n    <rect x='15' y='40' width='38' height='28' fill='none' stroke='#ffffff' stroke-width='1.5'/>\n    <text x='34' y='59' text-anchor='middle' font-size='16' font-family='Times New Roman, serif' fill='#ffffff'>0,2</text>\n    <rect x='15' y='155' width='38' height='28' fill='none' stroke='#ffffff' stroke-width='1.5'/>\n    <text x='34' y='174' text-anchor='middle' font-size='16' font-family='Times New Roman, serif' fill='#ffffff'>0,8</text>\n\n    <rect x='155' y='5' width='38' height='28' fill='none' stroke='#ffffff' stroke-width='1.5'/>\n    <text x='174' y='24' text-anchor='middle' font-size='16' font-family='Times New Roman, serif' fill='#ffffff'>0,7</text>\n    <rect x='155' y='80' width='38' height='28' fill='none' stroke='#ffffff' stroke-width='1.5'/>\n    <text x='174' y='99' text-anchor='middle' font-size='16' font-family='Times New Roman, serif' fill='#ffffff'>0,3</text>\n    <rect x='155' y='125' width='38' height='28' fill='none' stroke='#ffffff' stroke-width='1.5'/>\n    <text x='174' y='144' text-anchor='middle' font-size='16' font-family='Times New Roman, serif' fill='#ffffff'>0,6</text>\n    <rect x='155' y='200' width='38' height='28' fill='none' stroke='#ffffff' stroke-width='1.5'/>\n    <text x='174' y='219' text-anchor='middle' font-size='16' font-family='Times New Roman, serif' fill='#ffffff'>0,4</text>\n\n    <text x='112' y='60' font-size='19' font-family='Times New Roman, serif' fill='#ffffff'>A</text>\n    <text x='106' y='185' font-size='19' font-family='Times New Roman, serif' fill='#ffffff'>A̅</text>\n    <text x='264' y='25' font-size='19' font-family='Times New Roman, serif' fill='#ffffff'>B</text>\n    <text x='258' y='110' font-size='19' font-family='Times New Roman, serif' fill='#ffffff'>B̅</text>\n    <text x='264' y='145' font-size='19' font-family='Times New Roman, serif' fill='#ffffff'>B</text>\n    <text x='258' y='230' font-size='19' font-family='Times New Roman, serif' fill='#ffffff'>B̅</text>\n  </g>\n</svg></div>", "A": "$0{,}32$.", "B": "$0{,}92$.", "C": "$0{,}8$.", "D": "$0{,}4$.", "correct": "A"}, {"id": 14, "q": "Cho sơ đồ hình cây như hình bên. Xác suất của biến cố $B$ là<div style='margin-top:8px'><svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 360 230' style='max-width:320px;width:100%;height:auto;display:block'>\n  <g>\n    <line x1='40' y1='115' x2='105' y2='55' stroke='#ffffff' stroke-width='1.8'/>\n    <line x1='40' y1='115' x2='105' y2='175' stroke='#ffffff' stroke-width='1.8'/>\n    <line x1='140' y1='55' x2='255' y2='20' stroke='#ffffff' stroke-width='1.8'/>\n    <line x1='140' y1='55' x2='255' y2='105' stroke='#ffffff' stroke-width='1.8'/>\n    <line x1='140' y1='175' x2='255' y2='140' stroke='#ffffff' stroke-width='1.8'/>\n    <line x1='140' y1='175' x2='255' y2='225' stroke='#ffffff' stroke-width='1.8'/>\n\n    <rect x='15' y='40' width='38' height='28' fill='none' stroke='#ffffff' stroke-width='1.5'/>\n    <text x='34' y='59' text-anchor='middle' font-size='16' font-family='Times New Roman, serif' fill='#ffffff'>0,2</text>\n    <rect x='15' y='155' width='38' height='28' fill='none' stroke='#ffffff' stroke-width='1.5'/>\n    <text x='34' y='174' text-anchor='middle' font-size='16' font-family='Times New Roman, serif' fill='#ffffff'>0,8</text>\n\n    <rect x='155' y='5' width='38' height='28' fill='none' stroke='#ffffff' stroke-width='1.5'/>\n    <text x='174' y='24' text-anchor='middle' font-size='16' font-family='Times New Roman, serif' fill='#ffffff'>0,7</text>\n    <rect x='155' y='80' width='38' height='28' fill='none' stroke='#ffffff' stroke-width='1.5'/>\n    <text x='174' y='99' text-anchor='middle' font-size='16' font-family='Times New Roman, serif' fill='#ffffff'>0,3</text>\n    <rect x='155' y='125' width='38' height='28' fill='none' stroke='#ffffff' stroke-width='1.5'/>\n    <text x='174' y='144' text-anchor='middle' font-size='16' font-family='Times New Roman, serif' fill='#ffffff'>0,6</text>\n    <rect x='155' y='200' width='38' height='28' fill='none' stroke='#ffffff' stroke-width='1.5'/>\n    <text x='174' y='219' text-anchor='middle' font-size='16' font-family='Times New Roman, serif' fill='#ffffff'>0,4</text>\n\n    <text x='112' y='60' font-size='19' font-family='Times New Roman, serif' fill='#ffffff'>A</text>\n    <text x='106' y='185' font-size='19' font-family='Times New Roman, serif' fill='#ffffff'>A̅</text>\n    <text x='264' y='25' font-size='19' font-family='Times New Roman, serif' fill='#ffffff'>B</text>\n    <text x='258' y='110' font-size='19' font-family='Times New Roman, serif' fill='#ffffff'>B̅</text>\n    <text x='264' y='145' font-size='19' font-family='Times New Roman, serif' fill='#ffffff'>B</text>\n    <text x='258' y='230' font-size='19' font-family='Times New Roman, serif' fill='#ffffff'>B̅</text>\n  </g>\n</svg></div>", "A": "$0{,}28$.", "B": "$0{,}42$.", "C": "$0{,}62$.", "D": "$0{,}48$.", "correct": "C"}, {"id": 15, "q": "Cho sơ đồ hình cây như hình bên. Xác suất điều kiện $P(A\\mid B)$ là<div style='margin-top:8px'><svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 360 230' style='max-width:320px;width:100%;height:auto;display:block'>\n  <g>\n    <line x1='40' y1='115' x2='105' y2='55' stroke='#ffffff' stroke-width='1.8'/>\n    <line x1='40' y1='115' x2='105' y2='175' stroke='#ffffff' stroke-width='1.8'/>\n    <line x1='140' y1='55' x2='255' y2='20' stroke='#ffffff' stroke-width='1.8'/>\n    <line x1='140' y1='55' x2='255' y2='105' stroke='#ffffff' stroke-width='1.8'/>\n    <line x1='140' y1='175' x2='255' y2='140' stroke='#ffffff' stroke-width='1.8'/>\n    <line x1='140' y1='175' x2='255' y2='225' stroke='#ffffff' stroke-width='1.8'/>\n\n    <rect x='15' y='40' width='38' height='28' fill='none' stroke='#ffffff' stroke-width='1.5'/>\n    <text x='34' y='59' text-anchor='middle' font-size='16' font-family='Times New Roman, serif' fill='#ffffff'>0,2</text>\n    <rect x='15' y='155' width='38' height='28' fill='none' stroke='#ffffff' stroke-width='1.5'/>\n    <text x='34' y='174' text-anchor='middle' font-size='16' font-family='Times New Roman, serif' fill='#ffffff'>0,8</text>\n\n    <rect x='155' y='5' width='38' height='28' fill='none' stroke='#ffffff' stroke-width='1.5'/>\n    <text x='174' y='24' text-anchor='middle' font-size='16' font-family='Times New Roman, serif' fill='#ffffff'>0,7</text>\n    <rect x='155' y='80' width='38' height='28' fill='none' stroke='#ffffff' stroke-width='1.5'/>\n    <text x='174' y='99' text-anchor='middle' font-size='16' font-family='Times New Roman, serif' fill='#ffffff'>0,3</text>\n    <rect x='155' y='125' width='38' height='28' fill='none' stroke='#ffffff' stroke-width='1.5'/>\n    <text x='174' y='144' text-anchor='middle' font-size='16' font-family='Times New Roman, serif' fill='#ffffff'>0,6</text>\n    <rect x='155' y='200' width='38' height='28' fill='none' stroke='#ffffff' stroke-width='1.5'/>\n    <text x='174' y='219' text-anchor='middle' font-size='16' font-family='Times New Roman, serif' fill='#ffffff'>0,4</text>\n\n    <text x='112' y='60' font-size='19' font-family='Times New Roman, serif' fill='#ffffff'>A</text>\n    <text x='106' y='185' font-size='19' font-family='Times New Roman, serif' fill='#ffffff'>A̅</text>\n    <text x='264' y='25' font-size='19' font-family='Times New Roman, serif' fill='#ffffff'>B</text>\n    <text x='258' y='110' font-size='19' font-family='Times New Roman, serif' fill='#ffffff'>B̅</text>\n    <text x='264' y='145' font-size='19' font-family='Times New Roman, serif' fill='#ffffff'>B</text>\n    <text x='258' y='230' font-size='19' font-family='Times New Roman, serif' fill='#ffffff'>B̅</text>\n  </g>\n</svg></div>", "A": "$0{,}7$.", "B": "$\\dfrac{7}{50}$.", "C": "$0{,}48$.", "D": "$\\dfrac{7}{31}$.", "correct": "D"}, {"id": 16, "q": "Cho $P(A)=\\dfrac{2}{5};\\ P(B\\mid A)=\\dfrac{1}{3}$. Giá trị của $P(AB)$ là", "A": "$\\dfrac{4}{15}$.", "B": "$\\dfrac{1}{5}$.", "C": "$\\dfrac{3}{16}$.", "D": "$\\dfrac{2}{15}$.", "correct": "D"}, {"id": 17, "q": "Cho $P(A)=\\dfrac{2}{5};\\ P(B\\mid \\overline{A})=\\dfrac{1}{4}$. Giá trị của $P(B\\overline{A})$ là", "A": "$\\dfrac{4}{21}$.", "B": "$\\dfrac{3}{20}$.", "C": "$\\dfrac{4}{19}$.", "D": "$\\dfrac{1}{7}$.", "correct": "B"}, {"id": 18, "q": "Cho $P(A)=\\dfrac{2}{5};\\ P(B\\mid A)=\\dfrac{1}{3};\\ P(B\\mid \\overline{A})=\\dfrac{1}{4}$. Giá trị của $P(B)$ là", "A": "$\\dfrac{17}{60}$.", "B": "$\\dfrac{19}{60}$.", "C": "$\\dfrac{9}{20}$.", "D": "$\\dfrac{7}{30}$.", "correct": "A"}, {"id": 19, "q": "An có một túi gồm một số chiếc kẹo cùng loại, chỉ khác màu, trong đó có $6$ chiếc kẹo sô-cô-la đen, còn lại là $4$ chiếc kẹo sô-cô-la trắng. An lấy ngẫu nhiên $1$ chiếc kẹo trong túi để cho Bình, rồi lại lấy ngẫu nhiên tiếp $1$ chiếc kẹo nữa trong túi và cũng đưa cho Bình. Xác suất để Bình nhận được $2$ chiếc kẹo sô-cô-la đen là", "A": "$\\dfrac{1}{3}$.", "B": "$\\dfrac{1}{4}$.", "C": "$\\dfrac{3}{7}$.", "D": "$\\dfrac{2}{5}$.", "correct": "A"}, {"id": 20, "q": "An có một túi gồm một số chiếc kẹo cùng loại, chỉ khác màu, trong đó có $6$ chiếc kẹo sô-cô-la đen, còn lại là $4$ chiếc kẹo sô-cô-la trắng. An lấy ngẫu nhiên $1$ chiếc kẹo trong túi để cho Bình, rồi lại lấy ngẫu nhiên tiếp $1$ chiếc kẹo nữa trong túi và cũng đưa cho Bình. Xác suất để Bình nhận được $2$ chiếc kẹo sô-cô-la trắng là", "A": "$\\dfrac{2}{15}$.", "B": "$\\dfrac{4}{17}$.", "C": "$\\dfrac{3}{16}$.", "D": "$\\dfrac{1}{5}$.", "correct": "A"}, {"id": 21, "q": "An có một túi gồm một số chiếc kẹo cùng loại, chỉ khác màu, trong đó có $6$ chiếc kẹo sô-cô-la đen, còn lại là $4$ chiếc kẹo sô-cô-la trắng. An lấy ngẫu nhiên $1$ chiếc kẹo trong túi để cho Bình, rồi lại lấy ngẫu nhiên tiếp $1$ chiếc kẹo nữa trong túi và cũng đưa cho Bình. Xác suất để Bình nhận được chiếc kẹo sô-cô-la đen ở lần thứ nhất và chiếc kẹo sô-cô-la trắng ở lần thứ hai là", "A": "$\\dfrac{4}{17}$.", "B": "$\\dfrac{1}{5}$.", "C": "$\\dfrac{1}{4}$.", "D": "$\\dfrac{3}{16}$.", "correct": "B"}, {"id": 22, "q": "Cho $A$ và $B$ là hai biến cố bất kỳ. Khẳng định nào sau đây đúng?", "A": "$P(A\\cap B)=P(A)\\cdot P(B\\mid A)$.", "B": "$P(A\\cup B)=P(A)+P(B)$.", "C": "$P(A\\setminus B)=\\dfrac{P(B)}{P(AB)}$.", "D": "$P(A)=P(A\\mid B)\\cdot P(B)+P(A\\mid \\overline{B})\\cdot P(\\overline{B})$.", "correct": "A"}, {"id": 23, "q": "Cho hai biến cố $A$ và $B$. Xác suất của biến cố $A$ với điều kiện biến cố $B$ đã xảy ra được gọi là xác suất của $A$ với điều kiện $B$, kí hiệu là $P(A\\mid B)$. Chọn khẳng định đúng trong các khẳng định sau đây", "A": "Nếu $P(A)>0$ thì $P(A\\mid B)=\\dfrac{P(A\\cap B)}{P(A)}$.", "B": "Nếu $P(B)>0$ thì $P(A\\mid B)=\\dfrac{P(A\\cap B)}{P(B)}$.", "C": "Nếu $P(B)>0$ thì $P(A\\mid B)=\\dfrac{P(A\\cap B)}{P(A)}$.", "D": "Nếu $P(A)>0$ thì $P(A\\mid B)=\\dfrac{P(A\\cap B)}{P(B)}$.", "correct": "B"}, {"id": 24, "q": "Cho hai biến cố $M,\\ N$ với $0<P(N)<1$. Chọn khẳng định đúng trong các khẳng định sau đây", "A": "$P(M)=P(\\overline{N})\\cdot P(M\\mid N)+P(N)\\cdot P(M\\mid \\overline{N})$.", "B": "$P(M)=P(N)\\cdot P(M\\mid N)-P(\\overline{N})\\cdot P(M\\mid \\overline{N})$.", "C": "$P(M)=P(\\overline{N})\\cdot P(M\\mid \\overline{N})-P(N)\\cdot P(M\\mid N)$.", "D": "$P(M)=P(N)\\cdot P(M\\mid N)+P(\\overline{N})\\cdot P(M\\mid \\overline{N})$.", "correct": "D"}, {"id": 25, "q": "Cho các biến cố $A$ và $B$ thỏa mãn $P(B)=0{,}8;\\ P(AB)=0{,}5$. Tính $P(A\\mid B)$.", "A": "$\\dfrac{2}{5}$.", "B": "$\\dfrac{5}{8}$.", "C": "$\\dfrac{1}{5}$.", "D": "$\\dfrac{3}{5}$.", "correct": "B"}, {"id": 26, "q": "Cho hai biến cố $A$ và $B$, với $P(B)=0{,}8$, $P(A\\mid B)=0{,}7$, $P(A\\mid \\overline{B})=0{,}45$. Tính $P(B\\mid A)$.", "A": "$0{,}65$.", "B": "$0{,}25$.", "C": "$0{,}5$.", "D": "$\\dfrac{56}{65}$.", "correct": "D"}, {"id": 27, "q": "Cho hai biến cố độc lập $A$ và $B$ với $P(A)=0{,}7$, $P(B)=0{,}2$. Khi đó, $P(A\\mid B)$ bằng:", "A": "$0{,}3$.", "B": "$0{,}7$.", "C": "$0{,}8$.", "D": "$0{,}2$.", "correct": "B"}, {"id": 28, "q": "Cho hai biến cố $A, B$ sao cho $P(A)=0{,}6$; $P(B)=0{,}5$; $P(A\\mid B)=0{,}2$. Khi đó $P(B\\mid A)$ bằng", "A": "$\\dfrac{6}{25}$.", "B": "$\\dfrac{3}{25}$.", "C": "$\\dfrac{1}{6}$.", "D": "$\\dfrac{1}{3}$.", "correct": "C"}, {"id": 29, "q": "Cho hai biến cố $A,\\ B$ có $P(B)=0{,}6$, $P(A\\mid B)=0{,}5$. Khi đó $P(A.B)$ bằng", "A": "$\\dfrac{3}{10}$.", "B": "$\\dfrac{5}{6}$.", "C": "$\\dfrac{1}{2}$.", "D": "$\\dfrac{3}{5}$.", "correct": "A"}, {"id": 30, "q": "Cho bảng dữ liệu sau về kết quả xét nghiệm một loại bệnh:<table style='border-collapse:collapse;margin:10px auto;font-size:18px'>\n<tr><th style='border:1px solid currentColor;padding:8px 18px'></th><th style='border:1px solid currentColor;padding:8px 18px'>Dương tính</th><th style='border:1px solid currentColor;padding:8px 18px'>Âm tính</th></tr>\n<tr><th style='border:1px solid currentColor;padding:8px 18px'>Bệnh</th><td style='border:1px solid currentColor;padding:8px 18px'>120</td><td style='border:1px solid currentColor;padding:8px 18px'>30</td></tr>\n<tr><th style='border:1px solid currentColor;padding:8px 18px'>Không bệnh</th><td style='border:1px solid currentColor;padding:8px 18px'>40</td><td style='border:1px solid currentColor;padding:8px 18px'>970</td></tr>\n</table>Nếu một người có kết quả xét nghiệm dương tính, xác suất người đó thực sự bị bệnh là:", "A": "$3\\%$.", "B": "$11\\%$.", "C": "$75\\%$.", "D": "$90\\%$.", "correct": "C"}, {"id": 31, "q": "Cho hai biến cố $A, B$ thỏa mãn $P(\\overline{B})=0{,}2;\\ P(A\\mid B)=0{,}5;\\ P(A\\mid \\overline{B})=0{,}3$. Khi đó, $P(A)$ bằng", "A": "$0{,}34$.", "B": "$0{,}31$.", "C": "$0{,}46$.", "D": "$0{,}15$.", "correct": "C"}];
+const BANK_G2 = [{"id": 32, "q": "Giả sử $A$ và $B$ là hai biến cố ngẫu nhiên thỏa mãn $P(A)>0$ và $0<P(B)<1$. Khẳng định nào dưới đây là sai?", "A": "$P(A)=P(B)P(A\\mid B)+P(\\overline{B})P(A\\mid \\overline{B})$.", "B": "$P(B\\mid A)=\\dfrac{P(B)P(A\\mid B)}{P(A)}$.", "C": "$P(B\\mid A)=\\dfrac{P(B)P(A\\mid B)}{P(B)P(A\\mid B)+P(\\overline{B})P(A\\mid \\overline{B})}$.", "D": "$P(B\\mid A)=\\dfrac{P(B)P(A\\mid B)}{P(B)P(A\\mid B)+P(A)P(B\\mid A)}$.", "correct": "D"}, {"id": 33, "q": "Cho bảng dữ liệu sau về kết quả xét nghiệm một loại bệnh.<table style='border-collapse:collapse;margin:10px auto;font-size:18px'>\n<tr><th style='border:1px solid currentColor;padding:8px 18px'></th><th style='border:1px solid currentColor;padding:8px 18px'>Dương tính</th><th style='border:1px solid currentColor;padding:8px 18px'>Âm tính</th></tr>\n<tr><th style='border:1px solid currentColor;padding:8px 18px'>Bệnh</th><td style='border:1px solid currentColor;padding:8px 18px'>100</td><td style='border:1px solid currentColor;padding:8px 18px'>20</td></tr>\n<tr><th style='border:1px solid currentColor;padding:8px 18px'>Không bệnh</th><td style='border:1px solid currentColor;padding:8px 18px'>30</td><td style='border:1px solid currentColor;padding:8px 18px'>850</td></tr>\n</table>Nếu một người có kết quả xét nghiệm dương tính, xác suất người đó thực sự mắc bệnh gần nhất với kết quả nào sau đây?", "A": "$50\\%$.", "B": "$77\\%$.", "C": "$90\\%$.", "D": "$10\\%$.", "correct": "B"}, {"id": 34, "q": "Chọn khẳng định đúng.", "A": "Với hai biến cố $A,\\ B$ mà $P(A)>0,\\ P(B)>0$, ta có $P(B\\mid A)=\\dfrac{P(B)\\cdot P(A\\mid B)}{P(A)}$.", "B": "Với hai biến cố $A,\\ B$ ta có $P(B\\mid A)=\\dfrac{P(B)\\cdot P(A\\mid B)}{P(A)}$.", "C": "Với hai biến cố $A,\\ B$ mà $P(A)>0,\\ P(B)>0$, ta có $P(B\\mid A)=\\dfrac{P(A)\\cdot P(A\\mid B)}{P(B)}$.", "D": "Với hai biến cố $A,\\ B$ ta có $P(B\\mid A)=\\dfrac{P(A)\\cdot P(A\\mid B)}{P(B)}$.", "correct": "A"}, {"id": 35, "q": "Cho hai biến cố $A,\\ B$ với $0<P(B)<1$. Chọn khẳng định đúng trong các khẳng định sau.", "A": "$P(A)=P(B)\\cdot P(A\\mid B)+P(\\overline{B})\\cdot P(A\\mid \\overline{B})$.", "B": "$P(A)=P(B)\\cdot P(A\\mid \\overline{B})+P(\\overline{B})\\cdot P(A\\cap B)$.", "C": "$P(A)=P(B)\\cdot P(A\\mid B)+P(\\overline{B})\\cdot P(A\\cap \\overline{B})$.", "D": "$P(A)=P(B)\\cdot P(A\\cap \\overline{B})+P(\\overline{B})\\cdot P(A\\cap B)$.", "correct": "A"}, {"id": 36, "q": "Cho hai biến cố ngẫu nhiên $A,\\ B$ thỏa mãn $P(A)>0$ và $0<P(B)<1$. Chọn khẳng định đúng trong các khẳng định sau.", "A": "$P(B\\mid A)=\\dfrac{P(B)\\cdot P(A\\mid B)}{P(B)\\cdot P(A\\mid B)+P(\\overline{B})\\cdot P(A\\mid \\overline{B})}$.", "B": "$P(B\\mid A)=\\dfrac{P(A)\\cdot P(A\\mid \\overline{B})}{P(B)\\cdot P(A\\mid B)+P(\\overline{B})\\cdot P(A\\mid \\overline{B})}$.", "C": "$P(B\\mid A)=\\dfrac{P(A)\\cdot P(A\\mid B)}{P(B)\\cdot P(A\\mid B)+P(\\overline{B})\\cdot P(A\\mid \\overline{B})}$.", "D": "$P(B\\mid A)=\\dfrac{P(\\overline{B})\\cdot P(A\\mid \\overline{B})}{P(B)\\cdot P(A\\mid B)+P(B)\\cdot P(A\\mid \\overline{B})}$.", "correct": "A"}, {"id": 37, "q": "Cho hai biến cố $A,\\ B$ với $0<P(B)<1$. Phát biểu nào sau đây là đúng?", "A": "$P(A)=P(B)\\cdot P(A\\mid B)+P(\\overline{B})\\cdot P(A\\mid \\overline{B})$.", "B": "$P(A)=P(\\overline{B})\\cdot P(A\\mid \\overline{B})-P(B)\\cdot P(A\\mid B)$.", "C": "$P(A)=P(B)\\cdot P(A\\mid B)-P(\\overline{B})\\cdot P(A\\mid \\overline{B})$.", "D": "$P(A)=P(\\overline{B})\\cdot P(A\\mid B)+P(B)\\cdot P(A\\mid \\overline{B})$.", "correct": "A"}, {"id": 38, "q": "Cho hai biến cố $A$ và $B$ với $0<P(B)<1$. Khẳng định nào sau đây là đúng?", "A": "$P(A)=P(B)\\cdot P(A\\mid B)+P(\\overline{B})\\cdot P(A\\mid \\overline{B})$.", "B": "$P(A)=P(A)\\cdot P(A\\mid B)+P(\\overline{A})\\cdot P(A\\mid \\overline{B})$.", "C": "$P(A)=P(B)\\cdot P(A\\mid \\overline{B})+P(\\overline{B})\\cdot P(A\\mid B)$.", "D": "$P(A)=P(B)\\cdot P(A\\mid B)-P(\\overline{B})\\cdot P(A\\mid \\overline{B})$.", "correct": "A"}, {"id": 39, "q": "Cho hai biến cố $A$ và $B$, công thức tính xác suất toàn phần là", "A": "$P(B)=P(A)\\cdot P(A\\mid \\overline{B})+P(\\overline{A})\\cdot P(A\\mid B)$.", "B": "$P(B)=P(\\overline{A})\\cdot P(A\\mid \\overline{B})+P(\\overline{A})\\cdot P(A\\mid B)$.", "C": "$P(A)=P(B)\\cdot P(A\\mid B)+P(\\overline{B})\\cdot P(A\\mid \\overline{B})$.", "D": "$P(A)=P(B)\\cdot P(A\\mid \\overline{B})+P(\\overline{B})\\cdot P(A\\mid B)$.", "correct": "C"}, {"id": 40, "q": "Giả sử $A$ và $B$ là hai biến cố ngẫu nhiên thỏa mãn $P(A)>0$ và $0<P(B)<1$. Khẳng định nào sau đây là đúng?", "A": "$P(B\\mid A)=\\dfrac{P(B)P(A\\mid B)}{P(B)P(A\\mid B)-P(\\overline{B})P(A\\mid \\overline{B})}$.", "B": "$P(B\\mid A)=\\dfrac{P(B)P(A\\mid \\overline{B})}{P(B)P(A\\mid \\overline{B})+P(\\overline{B})P(A\\mid B)}$.", "C": "$P(B\\mid A)=\\dfrac{P(B)P(A\\mid B)}{P(B)P(A\\mid B)+P(\\overline{B})P(A\\mid \\overline{B})}$.", "D": "$P(B\\mid A)=\\dfrac{P(B)+P(A\\mid B)}{P(B)P(A\\mid B)+P(\\overline{B})P(A\\mid \\overline{B})}$.", "correct": "C"}, {"id": 41, "q": "Cho hai biến cố $A$ và $B$ là hai biến cố ngẫu nhiên mà $P(A)>0$, $P(B)>0$, công thức Bayes là", "A": "$P(B\\mid A)=\\dfrac{P(B)\\cdot P(A\\mid B)}{P(A)}$.", "B": "$P(B\\mid A)=\\dfrac{P(B)\\cdot P(B\\mid A)}{P(A)}$.", "C": "$P(B\\mid A)=\\dfrac{P(A)\\cdot P(A\\mid B)}{P(B)}$.", "D": "$P(B\\mid A)=\\dfrac{P(A)\\cdot P(B\\mid A)}{P(B)}$.", "correct": "A"}, {"id": 42, "q": "Công thức nào dưới đây đúng với công thức xác suất toàn phần:", "A": "$P(B)=P(A)\\cdot P(B\\mid A)+P(\\overline{A})\\cdot P(B\\mid \\overline{A})$.", "B": "$P(B)=P(B\\cup A)+P(B\\cup \\overline{A})$.", "C": "$P(B)=P(B\\mid A)+P(B\\mid \\overline{A})$.", "D": "Các công thức trên đều sai.", "correct": "A"}, {"id": 43, "q": "Cho các biến cố $A$ và $B$ sao cho $0<P(A)<1$, $0<P(B)<1$. Khẳng định nào sau đây là đúng?", "A": "$P(A)=P(\\overline{A}\\cap \\overline{B})+P(A\\cap B)$.", "B": "$P(B)=P(\\overline{A}\\cap B)+P(A\\cap \\overline{B})$.", "C": "$P(A)=P(A\\cap B)+P(\\overline{A}\\cap B)$.", "D": "$P(B)=P(A\\cap B)+P(\\overline{A}\\cap B)$.", "correct": "D"}, {"id": 44, "q": "Cho các biến cố $A$ và $B$ sao cho $0<P(A)<1$, $0<P(B)<1$, khẳng định nào sau đây là đúng?", "A": "$P(A)=P(B)\\cdot P(A\\mid B)+P(\\overline{B})\\cdot P(A\\mid \\overline{B})$.", "B": "$P(A)=P(B)\\cdot P(B\\mid A)+P(\\overline{B})\\cdot P(A\\mid B)$.", "C": "$P(B)=P(B)\\cdot P(A\\mid B)+P(\\overline{B})\\cdot P(A\\mid \\overline{B})$.", "D": "$P(B)=P(A)\\cdot P(B\\mid A)+P(\\overline{B})\\cdot P(A\\mid B)$.", "correct": "A"}, {"id": 45, "q": "Cho hai biến cố $A$ và $B$ độc lập, biết $P(B)=0{,}6$ và $P(A\\mid B)=0{,}3$, $P(A\\mid \\overline{B})=0{,}8$. Tính $P(A)$.", "A": "$P(A)=0{,}4$.", "B": "$P(A)=0{,}5$.", "C": "$P(A)=0{,}3$.", "D": "$P(A)=0{,}6$.", "correct": "B"}, {"id": 46, "q": "Một chiếc hộp có $20$ viên bi, trong đó có $12$ viên bi màu đỏ và $8$ viên bi màu vàng, các viên bi có kích thước và khối lượng giống nhau. Bạn Minh lấy $1$ viên bi từ hộp sau đó bạn Châu lấy viên bi thứ hai. Tính xác suất để bạn Châu lấy được viên bi màu đỏ", "A": "$\\dfrac{4}{5}$.", "B": "$\\dfrac{1}{5}$.", "C": "$\\dfrac{3}{5}$.", "D": "$\\dfrac{2}{5}$.", "correct": "C"}, {"id": 47, "q": "Cho hai biến cố $A,\\ B$, với $P(A)=0{,}3$, $P(B\\mid A)=0{,}4$, $P(B\\mid \\overline{A})=0{,}5$. Khẳng định nào sau là đúng?", "A": "$P(B)=0{,}47$.", "B": "$P(B)=0{,}3$.", "C": "$P(B)=0{,}12$.", "D": "$P(B)=0{,}5$.", "correct": "A"}, {"id": 48, "q": "Cho hai biến cố $A,\\ B$ thỏa mãn $P(A)=0{,}5$, $P(B\\mid A)=0{,}4$, $P(B\\mid \\overline{A})=0{,}6$. Khi đó $P(B)$ bằng", "A": "$0{,}5$.", "B": "$0{,}6$.", "C": "$0{,}3$.", "D": "$0{,}4$.", "correct": "A"}, {"id": 49, "q": "Cho các biến cố $A,\\ B$ thỏa mãn $P(A\\cap B)=\\dfrac{1}{3}$, $P(\\overline{A}\\cap B)=\\dfrac{1}{4}$. Xác suất để biến cố $B$ xảy ra là", "A": "$P(B)=\\dfrac{3}{4}$.", "B": "$P(B)=\\dfrac{1}{12}$.", "C": "$P(B)=\\dfrac{5}{12}$.", "D": "$P(B)=\\dfrac{7}{12}$.", "correct": "D"}, {"id": 50, "q": "Cho hai biến cố $A,\\ B$, với $P(A)=0{,}3$, $P(B\\mid A)=0{,}4$, $P(B\\mid \\overline{A})=0{,}5$. Khẳng định nào sau là đúng?", "A": "$P(B)=0{,}47$.", "B": "$P(B)=0{,}3$.", "C": "$P(B)=0{,}5$.", "D": "$P(B)=0{,}12$.", "correct": "A"}, {"id": 51, "q": "Cho hai biến cố $A,\\ B$ thỏa mãn $P(A)=0{,}5$, $P(B\\mid A)=0{,}4$, $P(B\\mid \\overline{A})=0{,}6$. Khi đó $P(B)$ bằng", "A": "$0{,}3$.", "B": "$0{,}5$.", "C": "$0{,}6$.", "D": "$0{,}4$.", "correct": "B"}, {"id": 52, "q": "Cho các biến cố $A,\\ B$ thỏa mãn $P(A\\cap B)=\\dfrac{1}{3}$, $P(\\overline{A}\\cap B)=\\dfrac{1}{4}$. Xác suất để biến cố $B$ xảy ra là", "A": "$P(B)=\\dfrac{3}{4}$.", "B": "$P(B)=\\dfrac{5}{12}$.", "C": "$P(B)=\\dfrac{7}{12}$.", "D": "$P(B)=\\dfrac{1}{12}$.", "correct": "C"}, {"id": 53, "q": "Cho $A,\\ B$ là hai biến cố. Biết $P(B)=0{,}2$. Nếu $B$ không xảy ra thì tỉ lệ $A$ xảy ra là $2\\%$. Nếu $B$ xảy ra thì tỉ lệ $A$ xảy ra $4\\%$. Xác suất của biến cố $A$ là bao nhiêu?", "A": "$0{,}028$.", "B": "$0{,}036$.", "C": "$0{,}024$.", "D": "$0{,}018$.", "correct": "C"}, {"id": 54, "q": "Cho hai biến cố $A,\\ B$ thỏa mãn $P(\\overline{B})=0{,}2;\\ P(A\\mid B)=0{,}5;\\ P(A\\mid \\overline{B})=0{,}3$. Khi đó $P(A)$ bằng", "A": "$0{,}34$.", "B": "$0{,}46$.", "C": "$0{,}15$.", "D": "$0{,}31$.", "correct": "B"}];
+const TOTAL_PER_GAME = 20;
+const SECONDS_PER_Q = 60;
+
+// NTS TEST: Chỉ bổ sung gửi kết quả về Google Sheet. Không thay đổi logic game.
+const GOOGLE_SHEET_URL = "https://script.google.com/macros/s/AKfycbzQnnFCNfsSY7CNnlDnT1GeqW5jSrbwwh8cqQ9zBCNQBQ8oaMgLetUi9OOm9idvVvF4/exec";
+let lastBeepSecond = null;
+
+function shuffle(a){
+  const arr = a.slice();
+  for(let i=arr.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [arr[i],arr[j]]=[arr[j],arr[i]]; }
+  return arr;
+}
+function pad2(n){ return String(n).padStart(2,'0'); }
+
+// Audio
+// Intro MP3 (phát ở màn hình nhập Họ tên / Lớp)
+const INTRO_SRC = "intro-on-tap-xac-suat-cong-thuc-bayes.mp3";
+const introAudio = document.getElementById("introAudio");
+let introPlaying = false;
+
+function tryPlayIntro(){
+  if(!introAudio) return;
+  if(!introAudio.src){
+    introAudio.src = INTRO_SRC;
+  }
+  introAudio.volume = 1.0;
+  const p = introAudio.play();
+  introPlaying = true;
+  if(p && p.catch){
+    p.catch(()=>{ introPlaying = false; /* autoplay bị chặn, sẽ thử lại khi người dùng tương tác */ });
+  }
+}
+
+function stopIntro(){
+  if(!introAudio) return;
+  introAudio.pause();
+  try{ introAudio.currentTime = 0; }catch(e){}
+  introPlaying = false;
+}
+
+function ensureIntro(){
+  if(!introPlaying) tryPlayIntro();
+}
+
+let audioOn = true;
+let audioCtx = null;
+let audioOut = null;
+
+function getAudioOut(){
+  audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+  try{ if(audioCtx.state==="suspended") audioCtx.resume(); }catch(e){}
+  if(!audioOut){
+    const comp = audioCtx.createDynamicsCompressor();
+    comp.threshold.value = -22;
+    comp.knee.value = 30;
+    comp.ratio.value = 10;
+    comp.attack.value = 0.003;
+    comp.release.value = 0.25;
+
+    const master = audioCtx.createGain();
+    master.gain.value = 0.95;
+
+    comp.connect(master);
+    master.connect(audioCtx.destination);
+    audioOut = comp;
+  }
+  return audioOut;
+}
+
+function beep(freqs, durMs, waveType="sine", peak=0.28){
+  if(!audioOn) return;
+  try{
+    const out = getAudioOut();
+    const now = audioCtx.currentTime;
+    const end = now + (durMs/1000);
+
+    const g = audioCtx.createGain();
+    g.gain.setValueAtTime(0.0001, now);
+    g.gain.linearRampToValueAtTime(peak, now + 0.015);
+    g.gain.setValueAtTime(peak*0.65, now + 0.12);
+    g.gain.exponentialRampToValueAtTime(0.0001, end);
+    g.connect(out);
+
+    freqs.forEach((f,i)=>{
+      const o = audioCtx.createOscillator();
+      o.type = waveType;
+      o.frequency.setValueAtTime(f, now);
+      o.detune.setValueAtTime((i%2 ? -6 : 6), now); // hơi "rung" cho mạnh mẽ
+      o.connect(g);
+      o.start(now + i*0.01);
+      o.stop(end + 0.05);
+    });
+  }catch(e){}
+}
+
+function kick(){
+  if(!audioOn) return;
+  try{
+    const out = getAudioOut();
+    const now = audioCtx.currentTime;
+    const o = audioCtx.createOscillator();
+    const g = audioCtx.createGain();
+    o.type = "sine";
+    o.frequency.setValueAtTime(160, now);
+    o.frequency.exponentialRampToValueAtTime(55, now + 0.16);
+    g.gain.setValueAtTime(0.0001, now);
+    g.gain.linearRampToValueAtTime(0.38, now + 0.01);
+    g.gain.exponentialRampToValueAtTime(0.0001, now + 0.22);
+    o.connect(g); g.connect(out);
+    o.start(now); o.stop(now + 0.25);
+  }catch(e){}
+}
+
+function noiseBurst(dur=0.12, peak=0.22){
+  if(!audioOn) return;
+  try{
+    const out = getAudioOut();
+    const now = audioCtx.currentTime;
+    const buffer = audioCtx.createBuffer(1, Math.floor(audioCtx.sampleRate*dur), audioCtx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for(let i=0;i<data.length;i++){
+      data[i] = (Math.random()*2-1) * (1 - i/data.length);
+    }
+    const src = audioCtx.createBufferSource();
+    src.buffer = buffer;
+
+    const g = audioCtx.createGain();
+    g.gain.setValueAtTime(0.0001, now);
+    g.gain.linearRampToValueAtTime(peak, now + 0.01);
+    g.gain.exponentialRampToValueAtTime(0.0001, now + dur);
+
+    src.connect(g); g.connect(out);
+    src.start(now); src.stop(now + dur);
+  }catch(e){}
+}
+
+function soundGood(){
+  // Âm đúng: sôi nổi, mạnh mẽ (~3s)
+  kick(); noiseBurst(0.10, 0.20);
+
+  // Fanfare (C major) + lên tông
+  beep([523.25, 659.25, 783.99], 650, "sawtooth", 0.26);
+  setTimeout(()=>beep([659.25, 783.99, 987.77], 700, "sawtooth", 0.26), 220);
+  setTimeout(()=>beep([783.99, 987.77, 1174.66], 750, "triangle", 0.24), 480);
+
+  setTimeout(()=>{
+    noiseBurst(0.14, 0.18);
+    beep([1046.50, 1318.51], 850, "square", 0.22);
+  }, 820);
+
+  // Chốt bằng hợp âm sáng
+  setTimeout(()=>beep([1046.50, 1318.51, 1567.98], 1400, "sine", 0.20), 1250);
+}
+
+function soundBad(){
+  // Âm sai: rõ ràng, dứt khoát (~1.6s)
+  noiseBurst(0.08, 0.14);
+  beep([220, 196], 1100, "sawtooth", 0.26);
+  setTimeout(()=>beep([174], 700, "sine", 0.18), 450);
+}
+
+
+
+// DOM
+const $ = (id)=>document.getElementById(id);
+const screenStart = $("screenStart");
+const screenGame = $("screenGame");
+const screenResult = $("screenResult");
+
+const btnStart = $("btnStart");
+const btnHow = $("btnHow");
+const howText = $("howText");
+
+
+const playerName = $("playerName");
+const playerClass = $("playerClass");
+// Phát intro khi người dùng tương tác ô nhập (đảm bảo chạy được trên điện thoại)
+["pointerdown","touchstart","focus","input","keydown"].forEach(evt=>{
+  playerName && playerName.addEventListener(evt, ensureIntro, {passive:true});
+  playerClass && playerClass.addEventListener(evt, ensureIntro, {passive:true});
+});
+const playerWarn = $("playerWarn");
+const btnExport = $("btnExport");
+const exportNote = $("exportNote");
+
+
+const qNum = $("qNum");
+const qTimer = $("qTimer");
+const timeBar = $("timeBar");
+const qText = $("qText");
+const choices = $("choices");
+const toast = $("toast");
+
+const btnPrev = $("btnPrev");
+const btnNext = $("btnNext");
+const btnExitReview = $("btnExitReview");
+const navHint = $("navHint");
+
+const sProg = $("sProg");
+const sGood = $("sGood");
+const sBad  = $("sBad");
+
+const btnStop = $("btnStop");
+const btnMute = $("btnMute");
+
+const rGood = $("rGood");
+const rBad  = $("rBad");
+const rScore= $("rScore");
+const resultTime = $("resultTime");
+const btnReplay = $("btnReplay");
+const btnReview = $("btnReview");
+const reviewNote = $("reviewNote");
+
+// State
+let game = null;
+let reviewMode = false;
+let tick = null;
+
+function show(screen){
+  [screenStart, screenGame, screenResult].forEach(s=>s.classList.remove("active"));
+  screen.classList.add("active");
+}
+
+function buildGame(){
+  const pick10G1 = shuffle(BANK_G1).slice(0, 10);
+  const pick10G2 = shuffle(BANK_G2).slice(0, 10);
+  const pick20 = shuffle([...pick10G1, ...pick10G2]).map(q => ({
+    id: q.id,
+    q: q.q,
+    options: { A:q.A, B:q.B, C:q.C, D:q.D },
+    correct: q.correct,
+    chosen: null,
+    locked: false,
+    timeLeft: SECONDS_PER_Q
+  }));
+  return {
+    startAt: Date.now(),
+    endAt: null,
+    index: 0,
+    items: pick20,
+    finished: false
+  };
+}
+
+function stopTimer(){ if(tick){ clearInterval(tick); tick=null; } }
+
+function startTimer(){
+  stopTimer();
+  tick = setInterval(()=>{
+    if(!game || game.finished) return;
+    const item = game.items[game.index];
+    if(item.locked) return;
+    item.timeLeft -= 0.1;
+    const sec = Math.ceil(item.timeLeft);
+    if(audioOn && sec <= 5 && sec > 0 && sec !== lastBeepSecond){
+      beep(880, 120);
+      lastBeepSecond = sec;
+    }
+    if(item.timeLeft <= 0){
+      item.timeLeft = 0;
+      onTimeout();
+      return;
+    }
+    renderTimer(item.timeLeft);
+  }, 100);
+}
+
+function renderTimer(sec){
+  const t = Math.max(0, Math.ceil(sec));
+  const mm = Math.floor(t/60);
+  const ss = t % 60;
+  qTimer.textContent = pad2(mm) + ":" + pad2(ss);
+  const pct = (sec/SECONDS_PER_Q)*100;
+  timeBar.style.width = pct + "%";
+}
+
+function stats(){
+  let done=0, good=0, bad=0;
+  for(const it of game.items){
+    if(it.chosen!==null){
+      done++;
+      if(it.chosen===it.correct) good++;
+      else bad++;
+    }
+  }
+  return {done, good, bad};
+}
+
+function renderStats(){
+  const st = game ? stats() : {done:0, good:0, bad:0};
+  sProg.textContent = st.done + "/" + TOTAL_PER_GAME;
+  sGood.textContent = String(st.good);
+  sBad.textContent  = String(st.bad);
+}
+
+function renderQuestion(){
+  const it = game.items[game.index];
+  qNum.textContent = "Câu " + (game.index+1) + "/" + TOTAL_PER_GAME;
+  toast.textContent = "";
+  toast.className = "toast";
+  navHint.textContent = it.locked ? "Đã chấm. Bấm “Câu tiếp” để qua câu mới." : "Chọn đáp án để chấm.";
+  btnPrev.disabled = (game.index===0);
+  btnNext.disabled = !it.locked;
+
+  qText.innerHTML = it.q;
+  choices.innerHTML = "";
+
+  const letters = ["A","B","C","D"];
+  for(const L of letters){
+    const btn = document.createElement("button");
+    btn.className = "btn choice";
+    btn.type = "button";
+    btn.innerHTML = "<b style='margin-right:10px;color:var(--orange2)'>" + L + ".</b> <span>" + it.options[L] + "</span>";
+    if(it.locked) btn.classList.add("disabled");
+    btn.addEventListener("click", ()=>choose(L));
+    choices.appendChild(btn);
+  }
+
+  if(window.MathJax && MathJax.typesetPromise){ MathJax.typesetPromise([qText, choices]).catch(()=>{}); }
+  renderTimer(it.timeLeft);
+  if(it.locked) markChoices(it);
+  renderStats();
+}
+
+function markChoices(it){
+  const nodes = [...choices.children];
+  const letters = ["A","B","C","D"];
+  nodes.forEach((node, idx)=>{
+    node.classList.remove("correct","wrong");
+    const L = letters[idx];
+    if(L===it.correct) node.classList.add("correct");
+    if(it.chosen && L===it.chosen && it.chosen!==it.correct) node.classList.add("wrong");
+  });
+}
+
+function lockAndMaybeFinish(){
+  const it = game.items[game.index];
+  btnNext.disabled = false;
+
+  if(game.index === TOTAL_PER_GAME-1){
+    setTimeout(()=>finishGame(), 600);
+  }
+}
+
+function choose(letter){
+  if(!game || game.finished) return;
+  const it = game.items[game.index];
+  if(it.locked) return;
+
+  it.chosen = letter;
+  it.locked = true;
+  it.spent = Math.max(0, SECONDS_PER_Q - it.timeLeft);
+
+  if(letter === it.correct){
+    toast.textContent = "✅ Chính xác!";
+    toast.className = "toast good";
+    soundGood();
+  } else {
+    toast.textContent = "❌ Chưa đúng.";
+    toast.className = "toast bad";
+    soundBad();
+  }
+  markChoices(it);
+  renderStats();
+  lockAndMaybeFinish();
+
+  // Tự động chuyển câu kế tiếp sau khi hiện đáp án đúng
+  const gradedIndex = game.index;
+  if(gradedIndex < TOTAL_PER_GAME-1){
+    setTimeout(()=>{
+      if(!game || game.finished) return;
+      if(game.index !== gradedIndex) return; // tránh nhảy 2 lần nếu người dùng bấm Next
+      next();
+    }, 900);
+  }
+}
+
+function onTimeout(){
+  const it = game.items[game.index];
+  if(it.locked) return;
+
+  it.chosen = "—";
+  it.locked = true;
+  it.spent = SECONDS_PER_Q;
+
+  toast.textContent = "⏱️ Hết giờ! Tính là sai.";
+  toast.className = "toast bad";
+  soundBad();
+  markChoices(it);
+  renderStats();
+  lockAndMaybeFinish();
+
+  // Hết giờ: hiện đáp án đúng rồi tự chuyển câu
+  const gradedIndex = game.index;
+  if(gradedIndex < TOTAL_PER_GAME-1){
+    setTimeout(()=>{
+      if(!game || game.finished) return;
+      if(game.index !== gradedIndex) return;
+      next();
+    }, 900);
+  }
+}
+
+function next(){
+  if(!game) return;
+  if(game.index < TOTAL_PER_GAME-1){
+    game.index++;
+    lastBeepSecond = null;
+    renderQuestion();
+  } else {
+    finishGame();
+  }
+}
+
+function prev(){
+  if(!game) return;
+  if(game.index > 0){
+    game.index--;
+    renderQuestion();
+  }
+}
+
+// NTS TEST: Gửi một bản sao kết quả về Google Sheet.
+// Thiết kế fail-safe: lỗi mạng/Google Sheet không được làm gián đoạn game.
+function sendResultToGoogleSheet(){
+  try{
+    if(!game || !game.finished || !GOOGLE_SHEET_URL) return;
+
+    const st = stats();
+    const score10 = Math.round((st.good / TOTAL_PER_GAME) * 10 * 100) / 100;
+    const totalSec = Math.round((game.endAt - game.startAt) / 1000);
+
+    const payload = {
+      gameCode: "BAYES",
+      gameName: "ÔN TẬP XÁC SUẤT - CÔNG THỨC BAYES",
+      playerName: game.playerName || "",
+      playerClass: game.playerClass || "",
+      startTime: new Date(game.startAt).toLocaleString("vi-VN"),
+      endTime: new Date(game.endAt).toLocaleString("vi-VN"),
+      totalSeconds: totalSec,
+      totalQuestions: TOTAL_PER_GAME,
+      correct: st.good,
+      wrong: st.bad,
+      score: score10
+    };
+
+    fetch(GOOGLE_SHEET_URL, {
+      method: "POST",
+      mode: "no-cors",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify(payload),
+      keepalive: true
+    }).catch(err => console.warn("NTS: Không gửi được kết quả về Google Sheet.", err));
+  }catch(err){
+    console.warn("NTS: Lỗi gửi Google Sheet đã được bỏ qua để game tiếp tục bình thường.", err);
+  }
+}
+
+function finishGame(){
+  if(!game || game.finished) return;
+  stopTimer();
+  game.endAt = Date.now();
+  game.finished = true;
+
+  const st = stats();
+  const score10 = Math.round((st.good / TOTAL_PER_GAME) * 10 * 100) / 100;
+
+  rGood.textContent = st.good;
+  rBad.textContent  = st.bad;
+  rScore.textContent= score10;
+
+  const totalSec = Math.round((game.endAt - game.startAt)/1000);
+  const mm = Math.floor(totalSec/60), ss = totalSec%60;
+  resultTime.textContent = "Thời gian: " + mm + "m " + ss + "s";
+
+  btnStop.disabled = true;
+  reviewMode = false;
+  if(btnExitReview) btnExitReview.style.display = "none";
+  show(screenResult);
+  renderStats();
+  if(exportNote) exportNote.style.display = "";
+
+  // NTS TEST: gửi kết quả sau khi game đã hoàn tất; không chờ phản hồi để không ảnh hưởng game.
+  sendResultToGoogleSheet();
+}
+
+
+function _safeFilename(s){
+  try{
+    return (s||"").toString()
+      .normalize("NFD").replace(/[\u0300-\u036f]/g,"")
+      .replace(/[^a-zA-Z0-9]+/g,"_")
+      .replace(/^_+|_+$/g,"")
+      .slice(0,40) || "HocSinh";
+  }catch(e){
+    return "HocSinh";
+  }
+}
+function _htmlToText(s){
+  return (s||"").toString()
+    .replace(/<img[^>]*>/gi,"[CT]")
+    .replace(/<br\s*\/?>/gi,"\n")
+    .replace(/<\/p>/gi,"\n")
+    .replace(/<[^>]*>/g,"")
+    .replace(/&nbsp;/g," ")
+    .replace(/&amp;/g,"&")
+    .replace(/\n{3,}/g,"\n\n")
+    .replace(/[ \t]{2,}/g," ")
+    .trim();
+}
+function exportExcel(){
+  if(!game || !game.finished) return;
+  const st = stats();
+  const score10 = Math.round((st.good / TOTAL_PER_GAME) * 10 * 100) / 100;
+  const totalSec = Math.round((game.endAt - game.startAt)/1000);
+
+  const now = new Date(game.endAt || Date.now());
+  const stamp = now.toISOString().slice(0,19).replace(/[:T]/g,"-");
+  const fn = `Ket_qua_on_tap_nguyen_ham_${_safeFilename(game.playerName)}_${_safeFilename(game.playerClass)}_${stamp}.xlsx`;
+
+  if(window.XLSX){
+    const summaryAOA = [
+      ["ÔN TẬP XÁC SUẤT-CÔNG THỨC BAYES - TẠO BỞI MR SANG"],
+      ["Họ và tên", game.playerName || ""],
+      ["Lớp", game.playerClass || ""],
+      ["Bắt đầu", new Date(game.startAt).toLocaleString("vi-VN")],
+      ["Kết thúc", new Date(game.endAt).toLocaleString("vi-VN")],
+      ["Thời gian làm (giây)", totalSec],
+      ["Số câu", TOTAL_PER_GAME],
+      ["Đúng", st.good],
+      ["Sai", st.bad],
+      ["Điểm (10)", score10],
+    ];
+    const ws1 = XLSX.utils.aoa_to_sheet(summaryAOA);
+
+    const header = ["STT","ID","Câu hỏi","A","B","C","D","Đáp án đúng","Đã chọn","Kết quả","Thời gian (giây)"];
+    const rows = [header];
+    for(let i=0;i<game.items.length;i++){
+      const it = game.items[i];
+      const chosen = (it.chosen===null) ? "" : it.chosen;
+      const result = (chosen===it.correct) ? "Đúng" : "Sai";
+      const spent = (typeof it.spent === "number") ? Math.round(it.spent) : "";
+      rows.push([
+        i+1,
+        it.id,
+        _htmlToText(it.q),
+        _htmlToText(it.options.A),
+        _htmlToText(it.options.B),
+        _htmlToText(it.options.C),
+        _htmlToText(it.options.D),
+        it.correct,
+        chosen,
+        result,
+        spent
+      ]);
+    }
+    const ws2 = XLSX.utils.aoa_to_sheet(rows);
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws1, "Tong_quan");
+    XLSX.utils.book_append_sheet(wb, ws2, "Chi_tiet");
+    XLSX.writeFile(wb, fn);
+  } else {
+    alert("Thiếu thư viện XLSX (cần Internet để tải). Anh/chị thử mở lại khi có mạng, hoặc dùng file CSV thay thế.");
+  }
+}
+
+function startNewGame(name, cls){
+  game = buildGame();
+  lastBeepSecond = null;
+  reviewMode = false;
+  if(btnExitReview) btnExitReview.style.display = "none";
+  game.playerName = name;
+  game.playerClass = cls;
+  show(screenGame);
+  if(exportNote) exportNote.style.display = "none";
+  btnStop.disabled = false;
+  renderQuestion();
+  startTimer();
+}
+
+btnStart.addEventListener("click", ()=>{
+  const name = (playerName?.value || "").trim();
+  const cls  = (playerClass?.value || "").trim();
+  if(!name || !cls){
+    if(playerWarn) playerWarn.style.display = "";
+    if(!name && playerName) playerName.focus();
+    else if(playerClass) playerClass.focus();
+    return;
+  }
+  if(playerWarn) playerWarn.style.display = "none";
+
+
+  if(audioOn) beep(440, 20); // unlock audio
+  stopIntro();
+  startNewGame(name, cls);
+});
+
+btnHow.addEventListener("click", ()=>{
+  howText.style.display = (howText.style.display==="none") ? "" : "none";
+  howText.textContent = "Chọn 1 đáp án (A–D). Sau khi chấm, đáp án đúng sẽ được tô xanh. Hết 60 giây mà chưa chọn thì tính sai.";
+});
+
+btnPrev.addEventListener("click", prev);
+btnNext.addEventListener("click", next);
+
+btnStop.addEventListener("click", ()=>{
+  if(!game) return;
+  finishGame();
+});
+
+btnMute.addEventListener("click", ()=>{
+  audioOn = !audioOn;
+  btnMute.textContent = audioOn ? "Tắt âm" : "Bật âm";
+  if(audioOn) beep(660, 40);
+});
+
+btnExit.addEventListener("click", ()=>{
+  const ok = confirm("Bạn muốn thoát? Tiến trình hiện tại sẽ không được tính.");
+  if(!ok) return;
+  stopTimer();
+  stopIntro();
+  game = null;
+  reviewMode = false;
+  if(btnExitReview) btnExitReview.style.display = "none";
+  show(screenStart);
+});
+
+
+btnReplay.addEventListener("click", ()=>{
+  // dùng lại thông tin học sinh của lượt vừa rồi (hoặc từ ô nhập)
+  const name = (game && game.playerName) ? game.playerName : ((playerName?.value||"").trim());
+  const cls  = (game && game.playerClass) ? game.playerClass : ((playerClass?.value||"").trim());
+  startNewGame(name || "—", cls || "—");
+  reviewNote.style.display = "none";
+});
+
+btnExport && btnExport.addEventListener("click", exportExcel);
+
+btnReview.addEventListener("click", ()=>{
+  if(!game) return;
+  reviewMode = true;
+  if(btnExitReview) btnExitReview.style.display = "";
+  show(screenGame);
+  reviewNote.style.display = "";
+  stopTimer();
+  renderQuestion();
+  qTimer.textContent = "Xem lại";
+  timeBar.style.width = "100%";
+  navHint.textContent = "Chế độ xem lại: bấm ↩ Trở lại kết quả để thoát.";
+});
+
+btnExitReview && btnExitReview.addEventListener("click", ()=>{
+  // Thoát chế độ xem lại
+  reviewMode = false;
+  if(btnExitReview) btnExitReview.style.display = "none";
+  if(reviewNote) reviewNote.style.display = "none";
+  show(screenResult);
+});
+
+// init
+show(screenStart);
+// Thử phát intro (có thể bị chặn trên mobile nếu chưa tương tác)
+setTimeout(()=>{ ensureIntro(); }, 300);
+
+renderStats();</script>
+</body>
+</html>
